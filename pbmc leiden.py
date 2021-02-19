@@ -40,8 +40,8 @@ sc.pl.highest_expr_genes(adata, n_top=20,)
 
 sc.pp.filter_cells(adata, min_genes=200)
 sc.pp.filter_genes(adata, min_cells=3)
-
-adata.var['mt'] = adata.var_names.str.startswith('mt-')  # annotate the group of mitochondrial genes as 'mt'
+##RAB37KO 的MT-是小寫,要從MT-改成mt-
+adata.var['mt'] = adata.var_names.str.startswith('MT-')  # annotate the group of mitochondrial genes as 'mt'
 sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
 
 sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
