@@ -28,10 +28,12 @@ import scanpy as sc
 import matplotlib.pyplot as plt
 import os
 foldername="pbmc3k"
+os.chdir("C:/Users/user/Desktop/test/scanpy")
 adata = sc.read_10x_mtx(
     'data/filtered_gene_bc_matrices/hg19/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                              # write a cache file for faster subsequent reading
+                             # write a cache file for faster subsequent reading
 
 adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
 
