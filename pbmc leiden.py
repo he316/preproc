@@ -7,6 +7,7 @@ Created on Tue Jan 26 14:10:22 2021
 scanpy tutorial leiden clustering and marker gene vol6.1 embedding with coordinates
 ##pbmc
 ##移除RAB37KO字串
+##標記celltype並輸出
 """
 
 # !mkdir data
@@ -86,6 +87,23 @@ try:
 except:
     pass
 
+celltype = list(adata.obs.celltype)
+for n, i in enumerate(celltype): #n=index,i=內容
+    if i == '0':
+      celltype[n] = '1'
+adata.obs.celltype=celltype  
+adata.obs.celltype.astype('category')
+
+
+adata.obs.celltype.to_csv('./'+foldername+'/celltype.csv')
+new_cluster_names = [
+    'CD4 T', 'CD14 Monocytes',
+    'B', 'CD8 T',
+    'NK', 'FCGR3A Monocytes',
+    'Dendritic', 'Megakaryocytes']
+adata.rename_categories('celltype', new_cluster_names)
+picture=sc.pl.umap(adata, color=['celltype'],size=20,return_fig=True)
+
 # adata.obs.leiden[X] = 第X個細胞的leiden cluster
 # adata.obs.leiden.index[X] = 第X個細胞的UMI
 # len(adata.obs.leiden.index) = 有被分群的細胞數量
@@ -102,12 +120,24 @@ for i in range(len(set(adata.obs.leiden))): #從群開始分
     print(foldername+'_Leiden_cluster_'+str(i)+'_'+str(len(tempDF.index))+'_cells')
 cluster_size.to_csv('./'+foldername+'/Leiden_clustering_size.csv')
 
-adata.to_df().to_csv('./'+foldername+'/preprocessed_cell.csv')#不分cluster的資料
+adata.to_df().to_csv('./'+foldername+'/preprocessed_cell.csv')#已處理但不分cluster的資料
+
+##細胞分群
+cluster_size={'cells':[]}
+cluster_size=pd.DataFrame(cluster_size)
+for index_m,elemenet_i in enumerate(set(adata.obs.celltype)): #從群開始分
+    tempDF=pd.DataFrame(columns=adata[0].var.index.to_list()) #建立一個空的DF,每個cluster一個,作為存檔用
+    for index_n,element_j in enumerate(adata.obs.celltype):#依序查詢細胞的分群        
+        if(str(adata.obs.celltype[index_n]) == str(elemenet_i) ):#cluster符合則將該筆資料加入tempDF,方便寫入檔案
+            tempDF=tempDF.append(adata[index_n].to_df())
+    tempDF.to_csv('./'+foldername+'/celltype_cluster_'+str(elemenet_i)+'.csv') #+'_'+str(len(tempDF.index))+'_cells
+    cluster_size.loc['celltype_cluster_'+str(elemenet_i)] = str(len(tempDF.index))
+    print(foldername+'_celltype_cluster_'+str(elemenet_i)+'_'+str(len(tempDF.index))+'_cells')
+cluster_size.to_csv('./'+foldername+'/celltype_clustering_size.csv')
+
 tempDF=pd.DataFrame(adata.obs.leiden)
 tempDF["UMAP1"]=adata.obsm['X_umap'][:,0].tolist()
 tempDF["UMAP2"]=adata.obsm['X_umap'][:,1].tolist()
+tempDF["cell_type"]=adata.obs.celltype
 tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_leiden_clusters_and_coordinates.csv')
-#細胞分群和他們的座標
-
-
-
+#celltype、細胞leiden分群和他們的座標
