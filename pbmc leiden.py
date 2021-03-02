@@ -27,57 +27,57 @@ import pandas as pd
 import scanpy as sc
 import matplotlib.pyplot as plt
 import os
-foldername="pbmc3k"
+foldername="GSE132188"
 os.chdir("C:/Users/user/Desktop/test/scanpy")
-adata = sc.read_10x_mtx(
-    'data/filtered_gene_bc_matrices/hg19/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                              # write a cache file for faster subsequent reading
+adata = sc.read(
+    'data/GSE132188/GSE132188_adata.h5ad.h5',  # the directory with the `.mtx` file
+    )                              # write a cache file for faster subsequent reading
                              # write a cache file for faster subsequent reading
-
-adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
-
-
-sc.pl.highest_expr_genes(adata, n_top=20,)
-
-sc.pp.filter_cells(adata, min_genes=200)
-sc.pp.filter_genes(adata, min_cells=3)
-##RAB37KO 的MT-是小寫,要從MT-改成mt-
-adata.var['mt'] = adata.var_names.str.startswith('MT-')  # annotate the group of mitochondrial genes as 'mt'
-sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
-
-sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
-             jitter=0.4, multi_panel=True)
-
-sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt')
-sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts')
-
-adata = adata[adata.obs.n_genes_by_counts < 2500, :]
-adata = adata[adata.obs.pct_counts_mt < 5, :]
-
-sc.pp.normalize_total(adata, target_sum=1e4)
-
-sc.pp.log1p(adata)
-
-sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
-
-sc.pl.highly_variable_genes(adata)
+if(1<0):
+    adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
+    
+    
+    sc.pl.highest_expr_genes(adata, n_top=20,)
+    
+    sc.pp.filter_cells(adata, min_genes=200)
+    sc.pp.filter_genes(adata, min_cells=3)
+    ##RAB37KO 的MT-是小寫,要從MT-改成mt-
+    adata.var['mt'] = adata.var_names.str.startswith('mt-')
+    adata.var['mt'] = adata.var_names.str.startswith('MT-')  # annotate the group of mitochondrial genes as 'mt'
+    sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
+    
+    sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
+                 jitter=0.4, multi_panel=True)
+    
+    sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt')
+    sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts')
+    
+    adata = adata[adata.obs.n_genes_by_counts < 2500, :]
+    adata = adata[adata.obs.pct_counts_mt < 5, :]
+    
+    sc.pp.normalize_total(adata, target_sum=1e4)
+    
+    sc.pp.log1p(adata)
+    
+    sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
+    
+    sc.pl.highly_variable_genes(adata)
 
 
 ### Principal component analysis
+    
+    
+    sc.tl.pca(adata, svd_solver='arpack')
+    
+    
+    sc.pl.pca_variance_ratio(adata, log=True)
+    
+    
+    sc.pp.neighbors(adata, n_neighbors=10, n_pcs=40)
+    
+    sc.tl.umap(adata)
 
-
-sc.tl.pca(adata, svd_solver='arpack')
-
-
-sc.pl.pca_variance_ratio(adata, log=True)
-
-
-sc.pp.neighbors(adata, n_neighbors=10, n_pcs=40)
-
-sc.tl.umap(adata)
-
-sc.tl.leiden(adata)
+sc.tl.leiden(adata,resolution=0.7)
 
 picture=sc.pl.umap(adata, color=['leiden'],size=20,return_fig=True)
 
