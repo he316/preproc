@@ -6,7 +6,11 @@ Created on Tue Jan 26 14:10:22 2021
 
 scanpy tutorial leiden clustering and marker gene vol6.1 embedding with coordinates
 ##pbmc
+<<<<<<< Updated upstream
 ##移除RAB37KO字串
+=======
+##scv pancrease
+>>>>>>> Stashed changes
 """
 
 # !mkdir data
@@ -20,19 +24,18 @@ scanpy tutorial leiden clustering and marker gene vol6.1 embedding with coordina
 
 #results_file = 'write/pbmc3k.h5ad'  # the file that will store the analysis results
 
-
+import scvelo as scv
 import seaborn as sns
 import numpy as np
 import pandas as pd
 import scanpy as sc
 import matplotlib.pyplot as plt
 import os
-foldername="GSE132188"
+foldername="scv_pancrease"
+Clustermethod="Leiden"
 os.chdir("C:/Users/user/Desktop/test/scanpy")
-adata = sc.read(
-    'data/GSE132188/GSE132188_adata.h5ad.h5',  # the directory with the `.mtx` file
-    )                              # write a cache file for faster subsequent reading
-                             # write a cache file for faster subsequent reading
+#adata = sc.read(    'data/GSE132188/GSE132188_adata.h5ad.h5')   # the directory with the `.mtx` file                             # write a cache file for faster subsequent reading
+adata = scv.datasets.pancreas()                             # write a cache file for faster subsequent reading
 if(1<0):
     adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
     
@@ -62,9 +65,7 @@ if(1<0):
     sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
     
     sc.pl.highly_variable_genes(adata)
-
-
-### Principal component analysis
+    ### Principal component analysis
     
     
     sc.tl.pca(adata, svd_solver='arpack')
@@ -77,7 +78,7 @@ if(1<0):
     
     sc.tl.umap(adata)
 
-sc.tl.leiden(adata,resolution=0.7)
+sc.tl.leiden(adata,resolution=0.41)
 
 picture=sc.pl.umap(adata, color=['leiden'],size=20,return_fig=True)
 
@@ -92,22 +93,21 @@ except:
 # len(set(adata.obs.leiden)) = 群數
 cluster_size={'cells':[]}
 cluster_size=pd.DataFrame(cluster_size)
-for i in range(len(set(adata.obs.leiden))): #從群開始分
+for index_m,elemenet_i in enumerate(set(adata.obs.leiden)): #從群開始分
     tempDF=pd.DataFrame(columns=adata[0].var.index.to_list()) #建立一個空的DF,每個cluster一個,作為存檔用
-    for j in range(len(adata.obs.leiden.index)):#依序查詢細胞的分群        
-        if(adata.obs.leiden[j] == str(i) ):#cluster符合則將該筆資料加入tempDF,方便寫入檔案
-            tempDF=tempDF.append(adata[j].to_df())
-    tempDF.to_csv('./'+foldername+'/Leiden_cluster_'+str(i)+'.csv') #+'_'+str(len(tempDF.index))+'_cells
-    cluster_size.loc['Leiden_cluster_'+str(i)] = str(len(tempDF.index))
-    print(foldername+'_Leiden_cluster_'+str(i)+'_'+str(len(tempDF.index))+'_cells')
-cluster_size.to_csv('./'+foldername+'/Leiden_clustering_size.csv')
+    for index_n,element_j in enumerate(adata.obs.leiden):#依序查詢細胞的分群        
+        if(str(adata.obs.leiden[index_n]) == str(elemenet_i) ):#cluster符合則將該筆資料加入tempDF,方便寫入檔案
+            tempDF=tempDF.append(adata[index_n].to_df())
+    tempDF.to_csv('./'+foldername+'/'+Clustermethod+'_cluster_'+str(elemenet_i)+'.csv') #+'_'+str(len(tempDF.index))+'_cells
+    cluster_size.loc[Clustermethod+'_cluster_'+str(elemenet_i)] = str(len(tempDF.index))
+    print(foldername+'_'+Clustermethod+'_cluster_'+str(elemenet_i)+'_'+str(len(tempDF.index))+'_cells')
+cluster_size=cluster_size.sort_index()
+cluster_size.to_csv('./'+foldername+'/'+Clustermethod+'_clustering_size.csv')
 
 adata.to_df().to_csv('./'+foldername+'/preprocessed_cell.csv')#不分cluster的資料
 tempDF=pd.DataFrame(adata.obs.leiden)
 tempDF["UMAP1"]=adata.obsm['X_umap'][:,0].tolist()
 tempDF["UMAP2"]=adata.obsm['X_umap'][:,1].tolist()
-tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_leiden_clusters_and_coordinates.csv')
+tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_'+Clustermethod+'_clusters_and_coordinates.csv')
 #細胞分群和他們的座標
-
-
 
