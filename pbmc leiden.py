@@ -11,7 +11,9 @@ scanpy tutorial leiden clustering and marker gene vol6.1 embedding with coordina
 =======
 ##scv pancrease
 >>>>>>> Stashed changes
+
 """
+
 
 # !mkdir data
 # !wget http://cf.10xgenomics.com/samples/cell-exp/1.1.0/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz -O data/pbmc3k_filtered_gene_bc_matrices.tar.gz
@@ -32,7 +34,9 @@ import scanpy as sc
 import matplotlib.pyplot as plt
 import os
 foldername="scv_pancrease"
-Clustermethod="Leiden"
+Clustermethod="celltype"
+
+
 os.chdir("C:/Users/user/Desktop/test/scanpy")
 #adata = sc.read(    'data/GSE132188/GSE132188_adata.h5ad.h5')   # the directory with the `.mtx` file                             # write a cache file for faster subsequent reading
 adata = scv.datasets.pancreas()                             # write a cache file for faster subsequent reading
@@ -80,27 +84,31 @@ if(1<0):
 
 sc.tl.leiden(adata,resolution=0.41)
 
-picture=sc.pl.umap(adata, color=['leiden'],size=20,return_fig=True)
+picture=sc.pl.umap(adata, color=['clusters'],size=20,return_fig=True)
 
 try:
     os.mkdir("./"+foldername,755)
 except:
     pass
 
+
+
+
 # adata.obs.leiden[X] = 第X個細胞的leiden cluster
 # adata.obs.leiden.index[X] = 第X個細胞的UMI
 # len(adata.obs.leiden.index) = 有被分群的細胞數量
 # len(set(adata.obs.leiden)) = 群數
+
 cluster_size={'cells':[]}
 cluster_size=pd.DataFrame(cluster_size)
-for index_m,elemenet_i in enumerate(set(adata.obs.leiden)): #從群開始分
+for index_m,element_i in enumerate(set(adata.obs['leiden'])): #從群開始分
     tempDF=pd.DataFrame(columns=adata[0].var.index.to_list()) #建立一個空的DF,每個cluster一個,作為存檔用
-    for index_n,element_j in enumerate(adata.obs.leiden):#依序查詢細胞的分群        
-        if(str(adata.obs.leiden[index_n]) == str(elemenet_i) ):#cluster符合則將該筆資料加入tempDF,方便寫入檔案
+    for index_n,element_j in enumerate(adata.obs['leiden']): #依序查詢細胞的分群        
+        if(str(adata.obs.leiden[index_n]) == str(element_i) ):#cluster符合則將該筆資料加入tempDF,方便寫入檔案
             tempDF=tempDF.append(adata[index_n].to_df())
-    tempDF.to_csv('./'+foldername+'/'+Clustermethod+'_cluster_'+str(elemenet_i)+'.csv') #+'_'+str(len(tempDF.index))+'_cells
-    cluster_size.loc[Clustermethod+'_cluster_'+str(elemenet_i)] = str(len(tempDF.index))
-    print(foldername+'_'+Clustermethod+'_cluster_'+str(elemenet_i)+'_'+str(len(tempDF.index))+'_cells')
+    tempDF.to_csv('./'+foldername+'/'+Clustermethod+'_cluster_'+str(element_i)+'.csv') #+'_'+str(len(tempDF.index))+'_cells
+    cluster_size.loc[Clustermethod+'_cluster_'+str(element_i)] = str(len(tempDF.index))
+    print(foldername+'_'+Clustermethod+'_cluster_'+str(element_i)+'_'+str(len(tempDF.index))+'_cells')
 cluster_size=cluster_size.sort_index()
 cluster_size.to_csv('./'+foldername+'/'+Clustermethod+'_clustering_size.csv')
 
@@ -111,3 +119,41 @@ tempDF["UMAP2"]=adata.obsm['X_umap'][:,1].tolist()
 tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_'+Clustermethod+'_clusters_and_coordinates.csv')
 #細胞分群和他們的座標
 
+
+
+#ifcluster的名稱是字串就跑這一段
+###<===start
+clusters='clusters'
+
+cluster_size={'cells':[]}
+cluster_size=pd.DataFrame(cluster_size)
+
+save_cluster_size={'cells':[]}
+save_cluster_size=pd.DataFrame(save_cluster_size)
+
+for index_m,element_i in enumerate(set(adata.obs['clusters'])):
+    cluster_size.loc[str(element_i)] = len(adata.obs['clusters'][adata.obs['clusters']==element_i])
+cluster_size=cluster_size.sort_values(by='cells',ascending=False)
+
+for index_m,element_i in enumerate(cluster_size.index): #從群開始分
+    tempDF=pd.DataFrame(columns=adata[0].var.index.to_list()) #建立一個空的DF,每個cluster一個,作為存檔用
+    for index_n,element_j in enumerate(adata.obs['clusters']): #依序查詢細胞的分群        
+        if(str(adata.obs.clusters[index_n]) == str(element_i) ):#cluster符合則將該筆資料加入tempDF,方便寫入檔案
+            tempDF=tempDF.append(adata[index_n].to_df())
+    tempDF.to_csv('./'+foldername+'/'+Clustermethod+'_cluster_'+str(index_m)+'.csv') #+'_'+str(len(tempDF.index))+'_cells
+    save_cluster_size.loc[Clustermethod+'_cluster_'+str(index_m)] = str(len(tempDF.index))
+    print(foldername+'_'+Clustermethod+'_cluster_'+str(index_m)+'_'+str(element_i)+'_'+str(len(tempDF.index))+'_cells')
+cluster_size.to_csv('./'+foldername+'/'+Clustermethod+'_clustering_table.csv')
+save_cluster_size.to_csv('./'+foldername+'/'+Clustermethod+'_clustering_size.csv')
+
+adata.obs['clusters2num']=adata.obs['clusters']
+#for index_m,element_i in enumerate(cluster_size.index):
+##這邊要把替換要替換的cluster帶進來    
+adata.rename_categories('clusters2num',['0','5','1','2','3','4','7','6'])
+
+adata.to_df().to_csv('./'+foldername+'/preprocessed_cell.csv')#不分cluster的資料
+tempDF=pd.DataFrame(adata.obs.clusters)
+tempDF["UMAP1"]=adata.obsm['X_umap'][:,0].tolist()
+tempDF["UMAP2"]=adata.obsm['X_umap'][:,1].tolist()
+tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_'+Clustermethod+'_clusters_and_coordinates.csv')
+###<===end
