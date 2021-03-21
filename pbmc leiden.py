@@ -39,7 +39,8 @@ Clustermethod="celltype"
 
 os.chdir("C:/Users/user/Desktop/test/scanpy")
 #adata = sc.read(    'data/GSE132188/GSE132188_adata.h5ad.h5')   # the directory with the `.mtx` file                             # write a cache file for faster subsequent reading
-adata = scv.datasets.pancreas()                             # write a cache file for faster subsequent reading
+adata = scv.datasets.pancreas()
+# write a cache file for faster subsequent reading
 if(1<0):
     adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
     
@@ -82,7 +83,7 @@ if(1<0):
     
     sc.tl.umap(adata)
 
-sc.tl.leiden(adata,resolution=0.41)
+sc.tl.leiden(adata,resolution=1)
 
 picture=sc.pl.umap(adata, color=['clusters'],size=20,return_fig=True)
 
@@ -152,7 +153,7 @@ adata.obs['clusters2num']=adata.obs['clusters']
 adata.rename_categories('clusters2num',['0','5','1','2','3','4','7','6'])
 
 adata.to_df().to_csv('./'+foldername+'/preprocessed_cell.csv')#不分cluster的資料
-tempDF=pd.DataFrame(adata.obs.clusters)
+tempDF=pd.DataFrame(adata.obs.clusters2num)
 tempDF["UMAP1"]=adata.obsm['X_umap'][:,0].tolist()
 tempDF["UMAP2"]=adata.obsm['X_umap'][:,1].tolist()
 tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_'+Clustermethod+'_clusters_and_coordinates.csv')
