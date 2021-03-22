@@ -218,30 +218,30 @@ cluster_size=pd.DataFrame(cluster_size)
 save_cluster_size={'cells':[]}
 save_cluster_size=pd.DataFrame(save_cluster_size)
 
-for index_m,element_i in enumerate(set(adata.obs['clusters'])):
-    cluster_size.loc[str(element_i)] = len(adata.obs['clusters'][adata.obs['clusters']==element_i])
+for index_m,element_i in enumerate(set(imputed_adata.obs['clusters'])):
+    cluster_size.loc[str(element_i)] = len(imputed_adata.obs['clusters'][imputed_adata.obs['clusters']==element_i])
 cluster_size=cluster_size.sort_values(by='cells',ascending=False)
 
 for index_m,element_i in enumerate(cluster_size.index): #從群開始分
-    tempDF=pd.DataFrame(columns=adata[0].var.index.to_list()) #建立一個空的DF,每個cluster一個,作為存檔用
-    for index_n,element_j in enumerate(adata.obs['clusters']): #依序查詢細胞的分群        
-        if(str(adata.obs.clusters[index_n]) == str(element_i) ):#cluster符合則將該筆資料加入tempDF,方便寫入檔案
-            tempDF=tempDF.append(adata[index_n].to_df())
+    tempDF=pd.DataFrame(columns=imputed_adata[0].var.index.to_list()) #建立一個空的DF,每個cluster一個,作為存檔用
+    for index_n,element_j in enumerate(imputed_adata.obs['clusters']): #依序查詢細胞的分群        
+        if(str(imputed_adata.obs.clusters[index_n]) == str(element_i) ):#cluster符合則將該筆資料加入tempDF,方便寫入檔案
+            tempDF=tempDF.append(imputed_adata[index_n].to_df())
     tempDF.to_csv('./'+foldername+'/'+Clustermethod+'_cluster_'+str(index_m)+'.csv') #+'_'+str(len(tempDF.index))+'_cells
     save_cluster_size.loc[Clustermethod+'_cluster_'+str(index_m)] = str(len(tempDF.index))
     print(foldername+'_'+Clustermethod+'_cluster_'+str(index_m)+'_'+str(element_i)+'_'+str(len(tempDF.index))+'_cells')
 cluster_size.to_csv('./'+foldername+'/'+Clustermethod+'_clustering_table.csv')
 save_cluster_size.to_csv('./'+foldername+'/'+Clustermethod+'_clustering_size.csv')
 
-adata.obs['clusters2num']=adata.obs['clusters']
+imputed_adata.obs['clusters2num']=imputed_adata.obs['clusters']
 #for index_m,element_i in enumerate(cluster_size.index):
 ##這邊要把替換要替換的cluster帶進來    
-adata.rename_categories('clusters2num',['0','5','1','2','3','4','7','6'])
+imputed_adata.rename_categories('clusters2num',['0','5','1','2','3','4','7','6'])
 
-adata.to_df().to_csv('./'+foldername+'/preprocessed_cell.csv')#不分cluster的資料
-tempDF=pd.DataFrame(adata.obs.clusters2num)
-tempDF["UMAP1"]=adata.obsm['X_umap'][:,0].tolist()
-tempDF["UMAP2"]=adata.obsm['X_umap'][:,1].tolist()
+imputed_adata.to_df().to_csv('./'+foldername+'/preprocessed_cell.csv')#不分cluster的資料
+tempDF=pd.DataFrame(imputed_adata.obs.clusters2num)
+tempDF["UMAP1"]=imputed_adata.obsm['X_umap'][:,0].tolist()
+tempDF["UMAP2"]=imputed_adata.obsm['X_umap'][:,1].tolist()
 tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_'+Clustermethod+'_clusters_and_coordinates.csv')
 imputed_adata.write_h5ad('./'+foldername+'/'+foldername+'.h5ad')
 ###<===end
