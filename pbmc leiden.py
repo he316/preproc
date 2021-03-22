@@ -100,7 +100,7 @@ def get_connectivities(adata, mode="connectivities", n_neighbors=None):
         return connectivities.tocsr().astype(np.float32)
     else:
         return None
-foldername="scv_pancrease_impute"
+foldername="scv_pancreas_impute"
 Clustermethod="celltype"
 
 
@@ -114,7 +114,6 @@ adata_conn=get_connectivities(adata)
 imputed_adata=adata.copy()
 imputed_adata.X=sp.dot(adata_conn,adata.X)
 
-sc.pp.neighbors(imputed_adata, n_neighbors=10, n_pcs=40)
 # write a cache file for faster subsequent reading
 if(1<0):
     adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
@@ -173,7 +172,7 @@ scv.tl.velocity(imputed_adata, mode='dynamical')
 scv.tl.velocity_graph(imputed_adata)
 scv.tl.latent_time(imputed_adata)
 scv.pl.scatter(imputed_adata, color='latent_time', color_map='gnuplot', size=80, colorbar=True)
-imputed_adata.write_h5ad('./'+foldername+'/'+foldername+'.h5ad')
+
 try:
     os.mkdir("./"+foldername,755)
 except:
@@ -244,4 +243,5 @@ tempDF=pd.DataFrame(adata.obs.clusters2num)
 tempDF["UMAP1"]=adata.obsm['X_umap'][:,0].tolist()
 tempDF["UMAP2"]=adata.obsm['X_umap'][:,1].tolist()
 tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_'+Clustermethod+'_clusters_and_coordinates.csv')
+imputed_adata.write_h5ad('./'+foldername+'/'+foldername+'.h5ad')
 ###<===end
