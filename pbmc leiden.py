@@ -33,13 +33,88 @@ import pandas as pd
 import scanpy as sc
 import matplotlib.pyplot as plt
 import os
-foldername="scv_pancrease"
+import warnings
+
+from scipy.sparse import issparse, coo_matrix
+import scipy as sp
+def select_distances(dist, n_neighbors=None):
+    D = dist.copy()
+    n_counts = (D > 0).sum(1).A1 if issparse(D) else (D > 0).sum(1)
+    n_neighbors = (
+        n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
+    )
+    rows = np.where(n_counts > n_neighbors)[0]
+    cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
+    dat = D.data
+
+    for row in rows:
+        n0, n1 = cumsum_neighs[row], cumsum_neighs[row + 1]
+        rm_idx = n0 + dat[n0:n1].argsort()[n_neighbors:]
+        dat[rm_idx] = 0
+    D.eliminate_zeros()
+    return D
+
+def select_connectivities(connectivities, n_neighbors=None):
+    C = connectivities.copy()
+    n_counts = (C > 0).sum(1).A1 if issparse(C) else (C > 0).sum(1)
+    n_neighbors = (
+        n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
+    )
+    rows = np.where(n_counts > n_neighbors)[0]
+    cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
+    dat = C.data
+
+    for row in rows:
+        n0, n1 = cumsum_neighs[row], cumsum_neighs[row + 1]
+        rm_idx = n0 + dat[n0:n1].argsort()[::-1][n_neighbors:]
+        dat[rm_idx] = 0
+    C.eliminate_zeros()
+    return C
+
+def get_neighs(adata, mode="distances"):
+    if hasattr(adata, "obsp") and mode in adata.obsp.keys():
+        return adata.obsp[mode]
+    elif "neighbors" in adata.uns.keys() and mode in adata.uns["neighbors"]:
+        return adata.uns["neighbors"][mode]
+    else:
+        raise ValueError("The selected mode is not valid.")
+
+
+def get_n_neighs(adata):
+    return adata.uns.get("neighbors", {}).get("params", {}).get("n_neighbors", 0)
+
+
+def get_connectivities(adata, mode="connectivities", n_neighbors=None):
+    if "neighbors" in adata.uns.keys():
+        C = get_neighs(adata, mode)
+        if n_neighbors is not None and n_neighbors < get_n_neighs(adata):
+            if mode == "connectivities":
+                C = select_connectivities(C, n_neighbors)
+            else:
+                C = select_distances(C, n_neighbors)
+        connectivities = C > 0
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            connectivities.setdiag(1)
+            connectivities = connectivities.multiply(1.0 / connectivities.sum(1))
+        return connectivities.tocsr().astype(np.float32)
+    else:
+        return None
+foldername="scv_pancrease_impute"
 Clustermethod="celltype"
 
 
 os.chdir("C:/Users/user/Desktop/test/scanpy")
 #adata = sc.read(    'data/GSE132188/GSE132188_adata.h5ad.h5')   # the directory with the `.mtx` file                             # write a cache file for faster subsequent reading
 adata = scv.datasets.pancreas()
+
+scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
+scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
+adata_conn=get_connectivities(adata)
+imputed_adata=adata.copy()
+imputed_adata.X=sp.dot(adata_conn,adata.X)
+
+sc.pp.neighbors(imputed_adata, n_neighbors=10, n_pcs=40)
 # write a cache file for faster subsequent reading
 if(1<0):
     adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
@@ -83,10 +158,22 @@ if(1<0):
     
     sc.tl.umap(adata)
 
-sc.tl.leiden(adata,resolution=1)
+sc.pp.neighbors(imputed_adata, n_neighbors=10, n_pcs=40)
 
-picture=sc.pl.umap(adata, color=['clusters'],size=20,return_fig=True)
+sc.tl.umap(imputed_adata)
+sc.tl.leiden(imputed_adata,resolution=1)
 
+picture=sc.pl.umap(imputed_adata, color=['leiden'],size=30,return_fig=True)
+scv.tl.velocity(imputed_adata)
+scv.tl.velocity_graph(imputed_adata)
+scv.pl.velocity_embedding_stream(imputed_adata, basis='umap')
+scv.pl.velocity_embedding(imputed_adata, basis='umap', arrow_length=2, arrow_size=1.5, dpi=150)
+scv.tl.recover_dynamics(imputed_adata)
+scv.tl.velocity(imputed_adata, mode='dynamical')
+scv.tl.velocity_graph(imputed_adata)
+scv.tl.latent_time(imputed_adata)
+scv.pl.scatter(imputed_adata, color='latent_time', color_map='gnuplot', size=80, colorbar=True)
+imputed_adata.write_h5ad('./'+foldername+'/'+foldername+'.h5ad')
 try:
     os.mkdir("./"+foldername,755)
 except:
