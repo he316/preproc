@@ -110,6 +110,7 @@ adata = scv.datasets.pancreas()
 
 scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
 scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
+imputed_adata=adata.copy()
 if impute is True:
     
     adata_conn=get_connectivities(adata)
@@ -159,7 +160,7 @@ if(1<0):
     
     sc.tl.umap(adata)
 
-sc.pp.neighbors(imputed_adata, n_neighbors=10, n_pcs=40)
+#sc.pp.neighbors(imputed_adata, n_neighbors=10, n_pcs=40)
 
 
 sc.tl.leiden(imputed_adata,resolution=1)
@@ -235,13 +236,13 @@ for index_m,element_i in enumerate(cluster_size.index): #從群開始分
 cluster_size.to_csv('./'+foldername+'/'+Clustermethod+'_clustering_table.csv')
 save_cluster_size.to_csv('./'+foldername+'/'+Clustermethod+'_clustering_size.csv')
 
-imputed_adata.obs['cell_type']=imputed_adata.obs['clusters']
+imputed_adata.obs['clusters2num']=imputed_adata.obs['clusters']
 #for index_m,element_i in enumerate(cluster_size.index):
 ##這邊要把替換要替換的cluster帶進來    
-imputed_adata.rename_categories('cell_type',['0','5','1','2','3','4','7','6'])
+imputed_adata.rename_categories('clusters2num',['0','5','1','2','3','4','7','6'])
 
 imputed_adata.to_df().to_csv('./'+foldername+'/preprocessed_cell.csv')#不分cluster的資料
-tempDF=pd.DataFrame(imputed_adata.obs.cell_type)
+tempDF=pd.DataFrame(imputed_adata.obs.clusters2num)
 tempDF["UMAP1"]=imputed_adata.obsm['X_umap'][:,0].tolist()
 tempDF["UMAP2"]=imputed_adata.obsm['X_umap'][:,1].tolist()
 tempDF.to_csv('./'+foldername+'/UMAP_cell_embeddings_to_'+Clustermethod+'_clusters_and_coordinates.csv')
